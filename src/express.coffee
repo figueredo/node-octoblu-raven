@@ -2,9 +2,6 @@ debug = require('debug')('octoblu-raven:express')
 
 class Express
   constructor: ({ @release, @dsn }, { @raven } = {}) ->
-    @dsn ?= process.env.SENTRY_DSN
-    @release ?= process.env.SENTRY_RELEASE
-    @raven ?= require 'raven'
     debug 'constructed with', { @dsn, @release }
 
   requestHandler: =>

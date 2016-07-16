@@ -1,4 +1,4 @@
-{ Express } = require '../'
+OctobluRaven = require '../'
 
 describe 'Express', ->
   beforeEach ->
@@ -11,7 +11,7 @@ describe 'Express', ->
   describe 'when the dsn exists', ->
     describe 'when constructed with a release', ->
       beforeEach ->
-        @sut = new Express { dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }
+        @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }).express()
 
       describe '->requestHandler', ->
         beforeEach ->
@@ -29,7 +29,7 @@ describe 'Express', ->
 
     describe 'when constructed without a release', ->
       beforeEach ->
-        @sut = new Express { dsn: 'the-dsn' }, { @raven }
+        @sut = new OctobluRaven({ dsn: 'the-dsn' }, { @raven }).express()
 
       describe '->requestHandler', ->
         beforeEach ->
@@ -47,7 +47,7 @@ describe 'Express', ->
 
   describe 'when the dsn does not exist', ->
     beforeEach ->
-      @sut = new Express { }, { @raven }
+      @sut = new OctobluRaven({ }, { @raven }).express()
 
     describe '->requestHandler', ->
       beforeEach ->

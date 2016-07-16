@@ -1,4 +1,4 @@
-{ Worker } = require '../'
+OctobluRaven = require '../'
 
 describe 'Worker', ->
   beforeEach ->
@@ -11,7 +11,7 @@ describe 'Worker', ->
   describe 'when the dsn exists', ->
     describe 'when constructed with a release', ->
       beforeEach ->
-        @sut = new Worker { dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }
+        @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }).worker()
 
       describe '->handleErrors', ->
         beforeEach ->
@@ -27,7 +27,7 @@ describe 'Worker', ->
 
     describe 'when constructed without a release', ->
       beforeEach ->
-        @sut = new Worker { dsn: 'the-dsn' }, { @raven }
+        @sut = new OctobluRaven({ dsn: 'the-dsn' }, { @raven }).worker()
 
       describe '->handleErrors', ->
         beforeEach ->
@@ -41,7 +41,7 @@ describe 'Worker', ->
 
   describe 'when the dsn does not exist', ->
     beforeEach ->
-      @sut = new Worker { }, { @raven }
+      @sut = new OctobluRaven({ }, { @raven }).worker()
 
     describe '->handleErrors', ->
       beforeEach ->

@@ -2,9 +2,6 @@ debug = require('debug')('octoblu-raven:worker')
 
 class Worker
   constructor: ({ @release, @dsn }, { @raven } = {}) ->
-    @dsn ?= process.env.SENTRY_DSN
-    @release ?= process.env.SENTRY_RELEASE
-    @raven ?= require 'raven'
     debug 'constructed with', { @dsn, @release }
 
   handleErrors: =>
