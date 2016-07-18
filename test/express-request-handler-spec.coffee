@@ -3,6 +3,7 @@ OctobluRaven = require '../'
 describe 'Express->requestHandler', ->
   beforeEach ->
     @raven =
+      Client: sinon.stub().returns {}
       middleware:
         express:
           requestHandler: sinon.spy()

@@ -7,12 +7,19 @@ class OctobluRaven
     @dsn ?= process.env.SENTRY_DSN
     @release ?= process.env.SENTRY_RELEASE
     @raven ?= require 'raven'
+    @client = @_getClient()
     debug 'constructed with', { @dsn, @release }
 
   express: =>
-    new Express { @dsn, @release }, { @raven }
+    new Express { @dsn, @release, @client }, { @raven, @client }
 
   worker: =>
-    new Worker { @dsn, @release }, { @raven }
+    new Worker { @dsn, @release }, { @raven, @client }
+
+  _getClient: =>
+    return null unless @dsn?
+    options = {}
+    options.release = @release if @release?
+    return new @raven.Client @dsn, options
 
 module.exports = OctobluRaven

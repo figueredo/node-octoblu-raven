@@ -3,6 +3,7 @@ OctobluRaven = require '../'
 describe 'Express->errorHandler', ->
   beforeEach ->
     @raven =
+      Client: sinon.stub().returns {}
       middleware:
         express:
           errorHandler: sinon.spy()
