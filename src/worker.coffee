@@ -9,10 +9,10 @@ class Worker
     debug 'handleErrors', { @dsn }
     options = {}
     options.release = @release if @release?
-    @client = @raven.Client @dsn, options
+    client = new @raven.Client @dsn, options
     debug 'setting up patchGlobal'
-    @client.patchGlobal (_, error) =>
-      debug 'handling error', arguments...
+    client.patchGlobal (_, error) =>
+      debug 'received error', arguments...
       console.error error?.stack ? error?.message ? error
       process.exit 1
 

@@ -1,6 +1,6 @@
 {
   "name": "octoblu-raven",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Raven Error handling for Octoblu Services and workers.",
   "main": "index.js",
   "scripts": {
