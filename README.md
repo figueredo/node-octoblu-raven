@@ -26,8 +26,16 @@ For use with express apps
 OctobluRaven = require 'octoblu-raven'
 
 ravenExpress = new OctobluRaven().express()
+# Ensures asynchronous exceptions are routed to the errorHandler. This
+# should be the **first** item listed in middleware.
 app.use(ravenExpress.requestHandler())
+# Error handler. This should be the last item listed in middleware, but
+# before any other error handlers.
 app.use(ravenExpress.errorHandler())
+# Expose response.sendError, which handles responding to the user with errors.
+# Only 500 errors and above are sent to Sentry
+# See express-send-error for more details
+app.use(ravenExpress.sendError())
 ```
 
 ```coffee
@@ -36,8 +44,16 @@ app.use(ravenExpress.errorHandler())
 OctobluRaven = require 'octoblu-raven'
 
 ravenExpress = new OctobluRaven({ dsn: 'the-sentry-dsn', release: version }).express()
+# Ensures asynchronous exceptions are routed to the errorHandler. This
+# should be the **first** item listed in middleware.
 app.use(ravenExpress.requestHandler())
+# Error handler. This should be the last item listed in middleware, but
+# before any other error handlers.
 app.use(ravenExpress.errorHandler())
+# Expose response.sendError, which handles responding to the user with errors.
+# Only 500 errors and above are sent to Sentry
+# See express-send-error for more details
+app.use(ravenExpress.sendError())
 ```
 
 ### Worker

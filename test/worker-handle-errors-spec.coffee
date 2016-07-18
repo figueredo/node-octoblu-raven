@@ -1,6 +1,6 @@
 OctobluRaven = require '../'
 
-describe 'Worker', ->
+describe 'Worker->handleErrors', ->
   beforeEach ->
     @client =
       patchGlobal: sinon.spy()
