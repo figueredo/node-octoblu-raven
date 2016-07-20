@@ -36,6 +36,8 @@ app.use(ravenExpress.errorHandler())
 # Only 500 errors and above are sent to Sentry
 # See express-send-error for more details
 app.use(ravenExpress.sendError())
+# Use request.meshbluAuth.uuid to set on the raven user context
+app.use(ravenExpress.meshbluAuthContext())
 ```
 
 ```coffee
@@ -54,11 +56,13 @@ app.use(ravenExpress.errorHandler())
 # Only 500 errors and above are sent to Sentry
 # See express-send-error for more details
 app.use(ravenExpress.sendError())
+# Use request.meshbluAuth.uuid to set on the raven user context
+app.use(ravenExpress.meshbluAuthContext())
 ```
 
 ### Worker
 
-For use with workers
+For use in workers or the root of node projects
 
 ```coffee
 # With DSN and release as environment

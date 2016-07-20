@@ -6,14 +6,23 @@ class Express
     debug 'constructed with', { @dsn, @release }
 
   requestHandler: =>
-    return @_defaultMiddleware() unless @dsn?
+    return @_defaultMiddleware() unless @client?
     debug 'requestHandler', { @dsn }
-    return @raven.middleware.express.requestHandler @dsn
+    return @raven.middleware.express.requestHandler @client
 
   errorHandler: =>
-    return @_defaultMiddleware() unless @dsn?
+    return @_defaultMiddleware() unless @client?
     debug 'errorHandler', { @dsn }
-    return @raven.middleware.express.errorHandler @dsn
+    return @raven.middleware.express.errorHandler @client
+
+  meshbluAuthContext: =>
+    return @_defaultMiddleware() unless @client?
+    return (req, res, next) =>
+      { uuid } = req.meshbluAuth ? {}
+      return next() unless uuid?
+      debug 'setting user context', { uuid }
+      @client.setUserContext { uuid }
+      next()
 
   sendError: ({logFn=console.error}={}) =>
     debug 'sendError', { @dsn }
