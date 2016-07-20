@@ -10,8 +10,8 @@ class OctobluRaven
     @client = @_getClient()
     debug 'constructed with', { @dsn, @release }
 
-  express: =>
-    new Express { @dsn, @release, @client }, { @raven, @client }
+  express: ({ logFn }={}) =>
+    new Express { @dsn, @release, @client, logFn }, { @raven, @client }
 
   worker: =>
     new Worker { @dsn, @release }, { @raven, @client }

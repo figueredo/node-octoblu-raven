@@ -2,7 +2,6 @@ debug = require('debug')('octoblu-raven:worker')
 
 class Worker
   constructor: ({ @release, @dsn }, { @raven, @client } = {}) ->
-    debug 'constructed with', { @dsn, @release }
 
   handleErrors: =>
     return unless @client?

@@ -15,70 +15,53 @@ npm install --save octoblu-raven
 
 ## Usage
 
-### Express
+### Configuration Environment
 
-For use with express apps
+`env SENTRY_DSN='the-sentry-dsn'`
+`env SENTRY_RELEASE='project-version'`
+
+- Optionally you can pass them into the constructor
 
 ```coffee
-# With DSN and release as environment
-# env SENTRY_DSN='the-sentry-dsn'
-# env SENTRY_RELEASE='git-tag'
-OctobluRaven = require 'octoblu-raven'
-
-ravenExpress = new OctobluRaven().express()
-# Ensures asynchronous exceptions are routed to the errorHandler. This
-# should be the **first** item listed in middleware.
-app.use(ravenExpress.requestHandler())
-# Error handler. This should be the last item listed in middleware, but
-# before any other error handlers.
-app.use(ravenExpress.errorHandler())
-# Expose response.sendError, which handles responding to the user with errors.
-# Only 500 errors and above are sent to Sentry
-# See express-send-error for more details
-app.use(ravenExpress.sendError())
-# Use request.meshbluAuth.uuid to set on the raven user context
-app.use(ravenExpress.meshbluAuthContext())
+new OctobluRaven({ dsn: 'the-sentry-dsn', release: 'project-version' })
 ```
 
-```coffee
-# With DSN and release passed in
-{ version } = require './package.json'
-OctobluRaven = require 'octoblu-raven'
+**NOTE:** if no DSN is provided, it default to normal behavior and will not log with sentry
 
-ravenExpress = new OctobluRaven({ dsn: 'the-sentry-dsn', release: version }).express()
-# Ensures asynchronous exceptions are routed to the errorHandler. This
-# should be the **first** item listed in middleware.
-app.use(ravenExpress.requestHandler())
-# Error handler. This should be the last item listed in middleware, but
-# before any other error handlers.
-app.use(ravenExpress.errorHandler())
-# Expose response.sendError, which handles responding to the user with errors.
-# Only 500 errors and above are sent to Sentry
-# See express-send-error for more details
-app.use(ravenExpress.sendError())
+### Express
+
+For use with express apps.
+
+```coffee
+OctobluRaven = require 'octoblu-raven'
+ravenExpress = new OctobluRaven().express()
 # Use request.meshbluAuth.uuid to set on the raven user context
+# Place after meshbluAuth middleware
 app.use(ravenExpress.meshbluAuthContext())
+# Use this expose response.sendError()
+app.use(ravenExpress.sendError())
+# Capture and Send Errors
+# Place after all middleware
+# Will capture error requests (statusCode >= 500)
+# **NOTE:** Add octobluRaven.worker().handleErrors() to capture uncaught exceptions
+# This will report the following cases:
+#   app.get '/blowup/500', (req, res, next) =>
+#     res.status(500).send error: 'oh no'
+#   app.get '/blowup/sendError', (req, res, next) =>
+#     error = new Error 'oh no'
+#     error.code = 502
+#     res.sendError error
+#   app.get '/blowup/uncaught', (req, res, next) =>
+#     throw new Error 'oh no'
+app.use(ravenExpress.handleErrors())
 ```
 
 ### Worker
 
-For use in workers or the root of node projects
+For use in the root of node projects. This will report uncaught exceptions.
 
 ```coffee
-# With DSN and release as environment
-# env SENTRY_DSN='the-sentry-dsn'
-# env SENTRY_RELEASE='git-tag'
 OctobluRaven = require 'octoblu-raven'
-
 ravenWorker = new OctobluRaven().worker()
-ravenWorker.handleErrors()
-```
-
-```coffee
-# With DSN and release passed in
-{ version } = require './package.json'
-OctobluRaven = require 'octoblu-raven'
-
-ravenWorker = new OctobluRaven({ dsn: 'the-sentry-dsn', release: version }).worker()
 ravenWorker.handleErrors()
 ```
