@@ -40,7 +40,6 @@ class Express
     return json
 
   _onFinished: (response, request, data) =>
-    return @_sendErrorToSentry error, request if error?
     debug 'handling error', { statusCode: response.statusCode }
     return if response.statusCode < 500
     try
