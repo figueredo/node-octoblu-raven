@@ -1,10 +1,9 @@
 _                 = require 'lodash'
-onFinished        = require 'on-finished'
 { STATUS_CODES }  = require 'http'
 debug             = require('debug')('octoblu-raven:express')
 
 class Express
-  constructor: ({ @release, @dsn }, { @raven, @client } = {}) ->
+  constructor: ({ @release, @dsn }, { @raven, @client, @logFn } = {}) ->
 
   meshbluAuthContext: =>
     debug 'meshbluAuthContext'
@@ -24,21 +23,32 @@ class Express
 
   _handleErrors: (request, response, next) =>
     return next() unless @client?
-    onFinished response, @_onFinished(request)
+    end = response.end
+    response.end = (chunk, encoding) =>
+      response.end = end
+      response.end chunk, encoding
+      debug 'on response end'
+      @_onFinished response, request, @_parseResponse(chunk)
     next()
 
-  _onFinished: (request) =>
-    return (error, response) =>
-      return @_sendErrorToSentry error, request if error?
-      debug 'handling error', { statusCode: response.statusCode }
-      return if response.statusCode < 500
-      data = response._getData()
-      try
-        error = new Error data.error ? data.message
-        error.code = response.statusCode
-      catch newError
-        error = newError
-      @_sendErrorToSentry error, request
+  _parseResponse: (data) =>
+    try
+      json = JSON.parse data
+    catch error
+      json = JSON.parse JSON.stringify { error: data }
+    debug 'parsed data', json
+    return json
+
+  _onFinished: (response, request, data) =>
+    return @_sendErrorToSentry error, request if error?
+    debug 'handling error', { statusCode: response.statusCode }
+    return if response.statusCode < 500
+    try
+      error = new Error data.error ? data.message
+      error.code = response.statusCode
+    catch newError
+      error = newError
+    @_sendErrorToSentry error, request
 
   _sendErrorToSentry: (error, request) =>
     debug 'sending to sentry'
