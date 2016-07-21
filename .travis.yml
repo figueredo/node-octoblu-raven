@@ -3,7 +3,7 @@ node_js:
 - '5'
 branches:
   only:
-  - "/^v[0-9]/"
+  - /^v[0-9]/
 deploy:
   provider: npm
   email: serveradmin@octoblu.com

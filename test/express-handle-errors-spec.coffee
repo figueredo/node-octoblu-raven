@@ -1,6 +1,16 @@
-_            = require 'lodash'
-httpMocks    = require 'node-mocks-http'
-OctobluRaven = require '../'
+_                = require 'lodash'
+{ EventEmitter } = require 'events'
+httpMocks        = require 'node-mocks-http'
+onFinished       = require 'on-finished'
+OctobluRaven     = require '../'
+
+testMiddleware = (middleware, routeHandler, done) =>
+  return (request, response, next) =>
+    routeHandler request, response, next
+    middleware request, response, next
+    onFinished response, done
+
+responseOptions = { eventEmitter: EventEmitter }
 
 describe 'Express->handleErrors', ->
   beforeEach ->
@@ -20,18 +30,12 @@ describe 'Express->handleErrors', ->
     describe 'when a error response is made', ->
       beforeEach (done) ->
         @request = {}
-        @response = httpMocks.createResponse({
-          eventEmitter: require('events').EventEmitter
-        })
+        @response = httpMocks.createResponse responseOptions
         @next = sinon.spy()
         routerHandler = (request, response, next) =>
-          @sut request, response, next
           @response.status(500).send error: 'random error'
-
-        @response.once 'end', () =>
-          _.delay done, 100
-
-        routerHandler @request, @response, @next
+        route = testMiddleware @sut, routerHandler, done
+        route @request, @response, @next
 
       it 'should yield a 500 and the message', ->
         expect(@response.statusCode).to.equal 500
@@ -48,18 +52,13 @@ describe 'Express->handleErrors', ->
     describe 'when is called with a non-500 error status', ->
       beforeEach (done) ->
         @request = {}
-        @response = httpMocks.createResponse({
-          eventEmitter: require('events').EventEmitter
-        })
+        @response = httpMocks.createResponse responseOptions
         @next = sinon.spy()
-        @response.once 'end', =>
-          _.delay done, 100
 
         routerHandler = (request, response, next) =>
-          @sut request, response, next
           @response.status(422).send error: 'its a 422 error'
-
-        routerHandler @request, @response, @next
+        route = testMiddleware @sut, routerHandler, done
+        route @request, @response, @next
 
       it 'should yield a 422 and the message', ->
         expect(@response.statusCode).to.equal 422
@@ -71,18 +70,12 @@ describe 'Express->handleErrors', ->
     describe 'when is called with an error status', ->
       beforeEach (done) ->
         @request = {}
-        @response = httpMocks.createResponse({
-          eventEmitter: require('events').EventEmitter
-        })
+        @response = httpMocks.createResponse responseOptions
         @next = sinon.spy()
-        @response.once 'end', =>
-          _.delay done, 100
-
         routerHandler = (request, response, next) =>
-          @sut request, response, next
           @response.status(502).send error: 'its a 502 error'
-
-        routerHandler @request, @response, @next
+        route = testMiddleware @sut, routerHandler, done
+        route @request, @response, @next
 
       it 'should yield a 502 and the message', ->
         expect(@response.statusCode).to.equal 502
@@ -91,11 +84,27 @@ describe 'Express->handleErrors', ->
       it 'should not log the error with sentry since it is a 500 level', ->
         expect(@client.captureError).to.have.been.called
 
+    describe 'when is called with an error status code and no body', ->
+      beforeEach (done) ->
+        @request = {}
+        @response = httpMocks.createResponse responseOptions
+        @next = sinon.spy()
+        routerHandler = (request, response, next) =>
+          @response.sendStatus 502
+        route = testMiddleware @sut, routerHandler, done
+        route @request, @response, @next
+
+      it 'should yield a 502 and the message', ->
+        expect(@response.statusCode).to.equal 502
+        expect(@response._getData()).to.equal 'Bad Gateway'
+
+      it 'should not log the error with sentry since it is a 500 level', ->
+        expect(@client.captureError).to.have.been.called
+
   describe 'called with a successful request', ->
     beforeEach (done) ->
-      @request = {}
       @response = httpMocks.createResponse()
-      @sut @request, @response, done
+      @sut {}, @response, done
 
     it 'should yield a 200 and the message', ->
       expect(@response.statusCode).to.equal 200

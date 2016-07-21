@@ -1,6 +1,6 @@
 OctobluRaven = require '../'
 
-describe 'Worker->handleErrors', ->
+describe 'OctobluRaven->patchGlobal', ->
   beforeEach ->
     @client =
       patchGlobal: sinon.spy()
@@ -11,11 +11,11 @@ describe 'Worker->handleErrors', ->
   describe 'when the dsn exists', ->
     describe 'when constructed with a release', ->
       beforeEach ->
-        @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }).worker()
+        @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven })
 
-      describe '->handleErrors', ->
+      describe '->patchGlobal', ->
         beforeEach ->
-          @sut.handleErrors()
+          @sut.patchGlobal()
 
         it 'should create a client', ->
           expect(@raven.Client).to.have.been.calledWith 'the-dsn', {
@@ -27,11 +27,11 @@ describe 'Worker->handleErrors', ->
 
     describe 'when constructed without a release', ->
       beforeEach ->
-        @sut = new OctobluRaven({ dsn: 'the-dsn' }, { @raven }).worker()
+        @sut = new OctobluRaven({ dsn: 'the-dsn' }, { @raven })
 
-      describe '->handleErrors', ->
+      describe '->patchGlobal', ->
         beforeEach ->
-          @sut.handleErrors()
+          @sut.patchGlobal()
 
         it 'should create a client', ->
           expect(@raven.Client).to.have.been.calledWith 'the-dsn', {}
@@ -41,11 +41,11 @@ describe 'Worker->handleErrors', ->
 
   describe 'when the dsn does not exist', ->
     beforeEach ->
-      @sut = new OctobluRaven({ }, { @raven }).worker()
+      @sut = new OctobluRaven({ }, { @raven })
 
-    describe '->handleErrors', ->
+    describe '->patchGlobal', ->
       beforeEach ->
-        @sut.handleErrors()
+        @sut.patchGlobal()
 
       it 'should not create a client', ->
         expect(@raven.Client).to.have.not.been.called

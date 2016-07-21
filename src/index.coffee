@@ -1,5 +1,4 @@
 Express = require './express'
-Worker  = require './worker'
 debug   = require('debug')('octoblu-raven:index')
 
 class OctobluRaven
@@ -10,11 +9,16 @@ class OctobluRaven
     @client = @_getClient()
     debug 'constructed with', { @dsn, @release }
 
-  express: ({ logFn }={}) =>
-    new Express { @dsn, @release, @client, logFn }, { @raven, @client }
+  express: =>
+    new Express { @dsn, @release, @client }, { @raven, @client }
 
-  worker: =>
-    new Worker { @dsn, @release }, { @raven, @client }
+  patchGlobal: =>
+    return unless @client?
+    debug 'setting up patchGlobal'
+    @client.patchGlobal (_, error) =>
+      debug 'received error', arguments...
+      console.error error?.stack ? error?.message ? error
+      process.exit 1
 
   _getClient: =>
     return null unless @dsn?

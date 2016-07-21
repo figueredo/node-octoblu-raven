@@ -1,10 +1,9 @@
 # node-octoblu-raven
-Raven Error handling for Octoblu Services and workers.
 
-[![Build Status](https://travis-ci.org/octoblu/.svg?branch=master)](https://travis-ci.org/octoblu/)
-[![Code Climate](https://codeclimate.com/github/octoblu//badges/gpa.svg)](https://codeclimate.com/github/octoblu/)
-[![Test Coverage](https://codeclimate.com/github/octoblu//badges/coverage.svg)](https://codeclimate.com/github/octoblu/)
-[![npm version](https://badge.fury.io/js/.svg)](http://badge.fury.io/js/)
+Raven Error handling for Octoblu Services and Workers.
+
+[![Build Status](https://travis-ci.org/octoblu/node-octoblu-raven.svg)](https://travis-ci.org/octoblu/)
+[![npm version](https://badge.fury.io/js/octoblu-raven.svg)](http://badge.fury.io/js/octoblu-raven)
 [![Gitter](https://badges.gitter.im/octoblu/help.svg)](https://gitter.im/octoblu/help)
 
 ## Installation
@@ -17,13 +16,20 @@ npm install --save octoblu-raven
 
 ### Configuration Environment
 
-`env SENTRY_DSN='the-sentry-dsn'`
-`env SENTRY_RELEASE='project-version'`
+**Recommended:**
 
-- Optionally you can pass them into the constructor
+`env SENTRY_DSN='the-sentry-dsn'`
+
+`env SENTRY_RELEASE='git-version'`
+
+**Optional:**
 
 ```coffee
-new OctobluRaven({ dsn: 'the-sentry-dsn', release: 'project-version' })
+overrideOptions = {
+  dsn: 'the-sentry-dsn',
+  release: 'project-version'
+}
+new OctobluRaven(overrideOptions)
 ```
 
 **NOTE:** if no DSN is provided, it default to normal behavior and will not log with sentry
@@ -35,15 +41,14 @@ For use with express apps.
 ```coffee
 OctobluRaven = require 'octoblu-raven'
 ravenExpress = new OctobluRaven().express()
-# Use request.meshbluAuth.uuid to set on the raven user context
-# Place after meshbluAuth middleware
+
+# Set the UUID of auth'd device as the user context for Sentry
+# NOTE: Place after meshbluAuth middleware
 app.use(ravenExpress.meshbluAuthContext())
-# Use this expose response.sendError()
-app.use(ravenExpress.sendError())
-# Capture and Send Errors
-# Place after all middleware
-# Will capture error requests (statusCode >= 500)
-# **NOTE:** Add octobluRaven.worker().handleErrors() to capture uncaught exceptions
+
+# Capture error requests with a status code of 500 or greater
+# This is fully compatible with the use of `express-send-error`
+# NOTE: User octobluRaven.patchGlobal() to capture uncaught exceptions
 # This will report the following cases:
 #   app.get '/blowup/500', (req, res, next) =>
 #     res.status(500).send error: 'oh no'
@@ -56,12 +61,12 @@ app.use(ravenExpress.sendError())
 app.use(ravenExpress.handleErrors())
 ```
 
-### Worker
+### Catch Uncaught Exceptions
 
-For use in the root of node projects. This will report uncaught exceptions.
+Use at the root the project, typically in `./command.js`. This can be used independently or with the use of the Express Middleware.
 
 ```coffee
 OctobluRaven = require 'octoblu-raven'
-ravenWorker = new OctobluRaven().worker()
-ravenWorker.handleErrors()
+octobluRaven = new OctobluRaven()
+octobluRaven.patchGlobal()
 ```

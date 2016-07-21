@@ -1,85 +1,47 @@
 _                 = require 'lodash'
+onFinished        = require 'on-finished'
 { STATUS_CODES }  = require 'http'
-debug = require('debug')('octoblu-raven:express')
+debug             = require('debug')('octoblu-raven:express')
 
 class Express
-  constructor: ({ @release, @dsn, @logFn }, { @raven, @client } = {}) ->
-    @logFn ?= console.error
+  constructor: ({ @release, @dsn }, { @raven, @client } = {}) ->
 
   meshbluAuthContext: =>
-    return @_defaultMiddleware() unless @client?
-    return (req, res, next) =>
-      { uuid } = req.meshbluAuth ? {}
-      return next() unless uuid?
-      debug 'setting user context', { uuid }
-      @client.setUserContext { uuid }
-      next()
+    debug 'meshbluAuthContext'
+    return @_meshbluAuthContext
 
-  handleErrors: ({logFn=console.error}={}) =>
+  _meshbluAuthContext: (req, res, next) =>
+    return next() unless @client?
+    { uuid } = req.meshbluAuth ? {}
+    return next() unless uuid?
+    debug 'setting user context', { uuid }
+    @client.setUserContext { uuid }
+    next()
+
+  handleErrors: =>
     debug 'handleErrors'
-    return (request, response, next) =>
-      debug 'here'
-      response.once 'end', =>
-        debug 'handling error', { statusCode: response.statusCode }
-        if response.statusCode >= 500
-          data = response._getData()
-          debug 'response code greater is 500', data
-          try
-            error = new Error(data.error ? data.message)
-            error.code = response.statusCode
-          catch newError
-            error = newError
-          @_sendErrorToSentry error, request, response, next
-          return
-      next()
+    return @_handleErrors
 
-  sendError:  =>
-    debug 'sendError'
-    return (request, response, next) =>
-      response.sendError = (error) =>
-        debug 'response.sendError called'
-        throw new Error('[octoblu-raven] sendError called without an error') unless error?
-        error = @_createError error
-        debug '_sendError', error
-        @logFn error.stack
-        @_respondWithError error, request, response, next
-      next()
+  _handleErrors: (request, response, next) =>
+    return next() unless @client?
+    onFinished response, @_onFinished(request)
+    next()
 
-  _createError: (error) =>
-    error = new Error(error) if _.isString error
-    code = @_getCode error
-    message = error.message ? error.error
-    unless _.isError error
+  _onFinished: (request) =>
+    return (error, response) =>
+      return @_sendErrorToSentry error, request if error?
+      debug 'handling error', { statusCode: response.statusCode }
+      return if response.statusCode < 500
+      data = response._getData()
       try
-        throw new Error message
+        error = new Error data.error ? data.message
+        error.code = response.statusCode
       catch newError
         error = newError
-    error.message = message
-    error.code = code
-    debug 'created error', { code, message }
-    return error
+      @_sendErrorToSentry error, request
 
-  _sendErrorToSentry: (error, request, response, next) =>
-    return unless @client?
-    return if error.code < 500
+  _sendErrorToSentry: (error, request) =>
     debug 'sending to sentry'
-    @client.captureError error, @raven.parsers.parseRequest(request)
-
-  _respondWithError: (error, request, response, next) =>
-    debug 'responding with error'
-    return next error if response.headersSent
-    return response.status(error.code).send { error: error.message } if error.message?
-    response.sendStatus(error.code)
-
-  _getCode: (error) =>
-    code = error.code
-    return code if STATUS_CODES[code]?
-    statusCode = error.status || error.statusCode || error.status_code
-    return statusCode if STATUS_CODES[statusCode]?
-    return 500
-
-  _defaultMiddleware: () =>
-    (req, res, next) =>
-      next()
+    @client.captureError error, @raven.parsers.parseRequest request
 
 module.exports = Express
