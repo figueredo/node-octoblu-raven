@@ -228,6 +228,31 @@ describe 'Express->handleErrors', ->
       it 'should not parse the request', ->
         expect(@raven.parsers.parseRequest).to.not.have.been.called
 
+    describe 'when a 200 with non-json body is made', ->
+      beforeEach (done) ->
+        @server
+          .get '/non-json'
+          .reply 200, 'not a problem'
+
+        options = {
+          @baseUrl,
+          uri: '/non-json'
+        }
+        request.get options, (error, @response, @body) =>
+          done error
+
+      it 'should yield a 200', ->
+        expect(@response.statusCode).to.equal 200
+
+      it 'should yield the correct error response', ->
+        expect(@body).to.deep.equal 'not a problem'
+
+      it 'should not log the error with sentry', ->
+        expect(@client.captureError).to.not.have.been.called
+
+      it 'should not parse the request', ->
+        expect(@raven.parsers.parseRequest).to.not.have.been.called
+
     describe 'when a 200 response is made', ->
       beforeEach (done) ->
         @server

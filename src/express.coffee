@@ -11,19 +11,7 @@ class Express
 
   _meshbluAuthContext: (request, response, next) =>
     return next() unless @client?
-    ended = false
-    checkForMeshbluAuth = =>
-      return if ended
-      debug 'request.meshbluAuth', request.meshbluAuth?.uuid?
-      return @client.setUserContext { uuid: request.meshbluAuth?.uuid } if request.meshbluAuth?.uuid?
-      debug 'checking for meshblu auth error again'
-      _.delay checkForMeshbluAuth, 2
-    checkForMeshbluAuth()
-    end = response.end
-    response.end = (chunk, encoding) =>
-      response.end = end
-      response.end chunk, encoding
-      ended = true
+    @client.setUserContext { uuid: request.meshbluAuth?.uuid } if request.meshbluAuth?.uuid?
     next()
 
   handleErrors: =>
@@ -55,7 +43,9 @@ class Express
     debug 'overriding send error'
     response._sendError = response.sendError
     response.sendError = (error) =>
-      @_sendErrorToSentry error, request, response if _.isError error
+      if _.isError error
+        error.code ?= 500
+        @_sendErrorToSentry error, request, response
       response._sendError arguments...
 
   _parseResponse: (data) =>
@@ -68,7 +58,8 @@ class Express
 
   _onFinished: (request, response, data) =>
     debug 'handling error', { statusCode: response.statusCode }
-    return if response._ravenSentError
+    return debug 'error already sent' if response._ravenSentError
+    return debug 'missing message' if !data?.error? && !data?.message?
     try
       error = new Error data.error ? data.message
       error.code = response.statusCode
@@ -78,8 +69,9 @@ class Express
     @_sendErrorToSentry error, request, response
 
   _sendErrorToSentry: (error, request, response) =>
-    debug 'sending to sentry'
+    debug 'maybe sending to sentry', error?.code
     return if error?.code < 500
+    debug 'sending to sentry'
     response._ravenSentError = true
     @client.captureError error, @raven.parsers.parseRequest request
 
