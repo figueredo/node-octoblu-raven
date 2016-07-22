@@ -124,6 +124,44 @@ describe 'Express->handleErrors', ->
       it 'should parse the request', ->
         expect(@raven.parsers.parseRequest).to.have.been.called
 
+    describe 'when response.sendError is called with a 422', ->
+      afterEach ->
+        @sendErrorServer.destroy()
+
+      beforeEach (done) ->
+        routeHandler = (request, response) =>
+          error = new Error 'oh no 422'
+          error.code = 422
+          response.sendError error
+
+        @sendErrorServer = shmock 0xbabe, [sendError({logFn: @consoleError}), @sut.handleErrors(), routeHandler]
+        enableDestroy @sendErrorServer
+
+        @sendErrorServer
+          .get '/send-error'
+          .delay 100
+          .reply 200, { does: not: 'matter' }
+
+        options = {
+          baseUrl: "http://localhost:#{0xbabe}",
+          uri: '/send-error'
+          json: true,
+        }
+        request.get options, (error, @response, @body) =>
+          done error
+
+      it 'should yield a 422', ->
+        expect(@response.statusCode).to.equal 422
+
+      it 'should yield the correct error response', ->
+        expect(@body).to.deep.equal error: 'oh no 422'
+
+      it 'should not log the error with sentry', ->
+        expect(@client.captureError).to.not.have.been.called
+
+      it 'should not parse the request', ->
+        expect(@raven.parsers.parseRequest).to.not.have.been.called
+
     describe 'when response.sendError is called and the middleware is a different order', ->
       afterEach ->
         @sendErrorServer.destroy()

@@ -69,7 +69,6 @@ class Express
   _onFinished: (request, response, data) =>
     debug 'handling error', { statusCode: response.statusCode }
     return if response._ravenSentError
-    return if response.statusCode < 500
     try
       error = new Error data.error ? data.message
       error.code = response.statusCode
@@ -80,6 +79,7 @@ class Express
 
   _sendErrorToSentry: (error, request, response) =>
     debug 'sending to sentry'
+    return if error?.code < 500
     response._ravenSentError = true
     @client.captureError error, @raven.parsers.parseRequest request
 
