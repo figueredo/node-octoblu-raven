@@ -16,7 +16,9 @@ describe 'Express->meshbluAuthContext', ->
           meshbluAuth:
             uuid: 'hello'
         @next = sinon.spy()
-        @sut req, null, @next
+        res =
+          end: sinon.spy()
+        @sut req, res, @next
 
       it 'should set the meshblu auth context', ->
         expect(@client.setUserContext).to.have.been.calledWith { uuid: 'hello' }
@@ -28,8 +30,10 @@ describe 'Express->meshbluAuthContext', ->
       beforeEach ->
         @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }).express().meshbluAuthContext()
         req = {}
+        res =
+          end: sinon.spy()
         @next = sinon.spy()
-        @sut req, null, @next
+        @sut req, res, @next
 
       it 'should not set the meshblu auth context', ->
         expect(@client.setUserContext).to.not.have.been.called

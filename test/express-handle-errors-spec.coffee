@@ -2,6 +2,7 @@ _                = require 'lodash'
 { EventEmitter } = require 'events'
 request          = require 'request'
 shmock           = require 'shmock'
+sendError        = require 'express-send-error'
 enableDestroy    = require 'server-destroy'
 { STATUS_CODES } = require 'http'
 OctobluRaven     = require '../'
@@ -17,10 +18,10 @@ describe 'Express->handleErrors', ->
         parseRequest: sinon.stub().returns { some: 'thing' }
 
     @consoleError = sinon.spy()
-    middleware = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }).express().handleErrors()
+    @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven }).express()
     @port = 0xd00d
     @baseUrl = "http://localhost:#{@port}"
-    @server = shmock @port, [middleware]
+    @server = shmock @port, [@sut.handleErrors(), sendError()]
     enableDestroy @server
 
   afterEach (done) ->
@@ -78,6 +79,86 @@ describe 'Express->handleErrors', ->
       it 'should log the error with sentry', ->
         expect(@client.captureError.getCall(0).args[0].message).to.equal 'oh no 502'
         expect(@client.captureError.getCall(0).args[0].code).to.equal 502
+        expect(@client.captureError.getCall(0).args[1]).to.deep.equal { some: 'thing' }
+
+      it 'should parse the request', ->
+        expect(@raven.parsers.parseRequest).to.have.been.called
+
+    describe 'when response.sendError is called', ->
+      afterEach ->
+        @sendErrorServer.destroy()
+
+      beforeEach (done) ->
+        routeHandler = (request, response) =>
+          error = new Error 'oh no 504'
+          error.code = 504
+          response.sendError error
+
+        @sendErrorServer = shmock 0xbabe, [sendError({logFn: @consoleError}), @sut.handleErrors(), routeHandler]
+        enableDestroy @sendErrorServer
+
+        @sendErrorServer
+          .get '/send-error'
+          .delay 100
+          .reply 200, { does: not: 'matter' }
+
+        options = {
+          baseUrl: "http://localhost:#{0xbabe}",
+          uri: '/send-error'
+          json: true,
+        }
+        request.get options, (error, @response, @body) =>
+          done error
+
+      it 'should yield a 504', ->
+        expect(@response.statusCode).to.equal 504
+
+      it 'should yield the correct error response', ->
+        expect(@body).to.deep.equal error: 'oh no 504'
+
+      it 'should log the error with sentry', ->
+        expect(@client.captureError.getCall(0).args[0].message).to.equal 'oh no 504'
+        expect(@client.captureError.getCall(0).args[0].code).to.equal 504
+        expect(@client.captureError.getCall(0).args[1]).to.deep.equal { some: 'thing' }
+
+      it 'should parse the request', ->
+        expect(@raven.parsers.parseRequest).to.have.been.called
+
+    describe 'when response.sendError is called and the middleware is a different order', ->
+      afterEach ->
+        @sendErrorServer.destroy()
+
+      beforeEach (done) ->
+        routeHandler = (request, response) =>
+          error = new Error 'oh no 504'
+          error.code = 504
+          response.sendError error
+
+        @sendErrorServer = shmock 0xbabe, [@sut.handleErrors(), sendError({logFn: @consoleError}), routeHandler]
+        enableDestroy @sendErrorServer
+
+        @sendErrorServer
+          .get '/send-error'
+          .delay 100
+          .reply 200, { does: not: 'matter' }
+
+        options = {
+          baseUrl: "http://localhost:#{0xbabe}",
+          uri: '/send-error'
+          json: true,
+        }
+        request.get options, (error, @response, @body) =>
+          done error
+
+      it 'should yield a 504', ->
+        expect(@response.statusCode).to.equal 504
+
+      it 'should yield the correct error response', ->
+        expect(@body).to.deep.equal error: 'oh no 504'
+
+      it 'should log the error with sentry', ->
+        expect(@client.captureError.getCall(0).args[0].message).to.equal 'oh no 504'
+        expect(@client.captureError.getCall(0).args[0].code).to.equal 504
         expect(@client.captureError.getCall(0).args[1]).to.deep.equal { some: 'thing' }
 
       it 'should parse the request', ->

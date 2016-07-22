@@ -1,6 +1,6 @@
 {
   "name": "octoblu-raven",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "Raven Error handling for Octoblu Services and workers.",
   "main": "index.js",
   "scripts": {
@@ -23,6 +23,7 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "coffee-coverage": "^1.0.1",
+    "express-send-error": "^1.1.0",
     "mocha": "^2.5.3",
     "node-mocks-http": "^1.5.2",
     "request": "^2.73.0",
