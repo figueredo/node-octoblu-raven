@@ -2,16 +2,20 @@ Express = require './express'
 debug   = require('debug')('octoblu-raven:index')
 
 class OctobluRaven
-  constructor: ({ @release, @dsn } = {}, { @raven, @logFn } = {}) ->
+  constructor: ({ @release, @dsn, @name } = {}, { @raven, @logFn } = {}) ->
     @logFn ?= console.error
     @dsn ?= process.env.SENTRY_DSN
     @release ?= process.env.SENTRY_RELEASE
+    @name ?= process.env.SENTRY_NAME
     @raven ?= require 'raven'
     @client = @_getClient()
-    debug 'constructed with', { @dsn, @release }
+    debug 'constructed with', { @dsn, @release, @name }
 
   express: =>
-    new Express { @dsn, @release, @client }, { @raven, @client, @logFn }
+    new Express { @raven, @client, @logFn }
+
+  setUserContext: (options) =>
+    @client.setUserContext options
 
   patchGlobal: =>
     return unless @client?
@@ -25,6 +29,7 @@ class OctobluRaven
     return null unless @dsn?
     options = {}
     options.release = @release if @release?
+    options.name = @name if @name?
     return new @raven.Client @dsn, options
 
 module.exports = OctobluRaven

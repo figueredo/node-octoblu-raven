@@ -3,7 +3,7 @@ _                 = require 'lodash'
 debug             = require('debug')('octoblu-raven:express')
 
 class Express
-  constructor: ({ @release, @dsn }, { @raven, @client, @logFn } = {}) ->
+  constructor: ({ @raven, @client, @logFn } = {}) ->
 
   meshbluAuthContext: =>
     debug 'meshbluAuthContext'
