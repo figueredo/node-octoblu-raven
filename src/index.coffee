@@ -1,3 +1,4 @@
+_       = require 'lodash'
 Express = require './express'
 debug   = require('debug')('octoblu-raven:index')
 
@@ -16,6 +17,12 @@ class OctobluRaven
 
   setUserContext: (options) =>
     @client.setUserContext options
+
+  reportError: (error, extra) =>
+    return unless @client?
+    return @client.captureException error, extra if _.isError error
+    return @client.captureMessage error, extra if _.isString error
+    @client.captureMessage JSON.stringify(error), extra
 
   patchGlobal: =>
     return unless @client?

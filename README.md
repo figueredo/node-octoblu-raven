@@ -22,12 +22,15 @@ npm install --save octoblu-raven
 
 `env SENTRY_RELEASE='git-version'`
 
+`env SENTRY_NAME='some-app-name'` *optional*
+
 **Optional:**
 
 ```coffee
 overrideOptions = {
   dsn: 'the-sentry-dsn',
-  release: 'project-version'
+  release: 'project-version',
+  name: 'some-app-name',
 }
 new OctobluRaven(overrideOptions)
 ```
@@ -69,4 +72,29 @@ Use at the root the project, typically in `./command.js`. This can be used indep
 OctobluRaven = require 'octoblu-raven'
 octobluRaven = new OctobluRaven()
 octobluRaven.patchGlobal()
+```
+
+### Report Error, or Message
+
+Use this to manually report an error or message to Sentry.
+
+```coffee
+OctobluRaven = require 'octoblu-raven'
+octobluRaven = new OctobluRaven()
+octobluRaven.reportError(new Error('oh no'))
+# or it will take a string
+octobluRaven.reportError('oh no')
+```
+
+### Set User Context
+
+This can be used to set the user context.
+
+```coffee
+OctobluRaven = require 'octoblu-raven'
+octobluRaven = new OctobluRaven()
+octobluRaven.setUserContext({
+  uuid: 'some-uuid',
+  email: 'some-email',
+})
 ```
