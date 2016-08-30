@@ -1,4 +1,5 @@
 _                 = require 'lodash'
+onFinished        = require 'on-finished'
 { STATUS_CODES }  = require 'http'
 debug             = require('debug')('octoblu-raven:express')
 
@@ -9,70 +10,86 @@ class Express
     debug 'meshbluAuthContext'
     return @_meshbluAuthContext
 
+  errorHandler: =>
+    debug 'errorHandler'
+    return @raven.middleware.express.errorHandler @client
+
+  requestHandler: =>
+    debug 'requestHandler'
+    return @raven.middleware.express.requestHandler @client
+
+  badRequestHandler: =>
+    debug 'badRequestHandler'
+    return @_badRequestHandler
+
+  sendErrorHandler: =>
+    debug 'sendErrorHandler'
+    return @_sendErrorHandler
+
   _meshbluAuthContext: (request, response, next) =>
-    return next() unless @client?
+    debug '_meshbluAuthContext', request.meshbluAuth?.uuid
     @client.setUserContext { uuid: request.meshbluAuth?.uuid } if request.meshbluAuth?.uuid?
     next()
 
-  handleErrors: =>
-    debug 'handleErrors'
-    return @_handleErrors
-
-  _handleErrors: (request, response, next) =>
-    return next() unless @client?
-    ended = false
-    checkSendError = =>
-      return if ended
-      return if response._ravenSentError
-      debug 'response.sendError', response.sendError?
-      return @_overrideSendError response, request if response.sendError?
-      debug 'checking for send error again'
-      _.delay checkSendError, 2
-    checkSendError()
-    end = response.end
-    response.end = (chunk, encoding) =>
-      response.end = end
-      response.end chunk, encoding
-      debug 'on response end'
-      ended = true
-      @_onFinished request, response, @_parseResponse(chunk)
+  _badRequestHandler: (request, response, next) =>
+    debug '_badRequestHandler'
+    onFinished response, (error, response) =>
+      code = response.statusCode
+      return if code < 500
+      @_captureMessage "#{STATUS_CODES[code]}: #{code}", request, response
     next()
 
-  _overrideSendError: (response, request) =>
-    return unless response.sendError?
-    debug 'overriding send error'
-    response._sendError = response.sendError
+  _sendErrorHandler: (request, response, next) =>
+    debug '_sendErrorHandler'
     response.sendError = (error) =>
-      if _.isError error
-        error.code ?= 500
-        @_sendErrorToSentry error, request, response
-      response._sendError arguments...
+      try
+        throw @_getError error
+      catch stackerror
+        @logFn stackerror.stack
+      code = @_getCode error
+      @_captureError error, request, response if code >= 500
+      response.status(code).send @_getResponseMessage(error, code)
+    next()
 
-  _parseResponse: (data) =>
-    try
-      json = JSON.parse data
-    catch error
-      json = JSON.parse JSON.stringify { error: data }
-    debug 'parsed data', json
-    return json
+  _getError: (error) =>
+    return new Error '[octoblu-raven] sendError called without an error' unless error?
+    return error if _.isError error
+    return new Error @_getMessage(error)
 
-  _onFinished: (request, response, data) =>
-    debug 'handling error', { statusCode: response.statusCode }
-    return debug 'error already sent' if response._ravenSentError
-    return debug 'missing message' if !data?.error? && !data?.message?
-    try
-      error = new Error data.error ? data.message
-      error.code = response.statusCode
-      error.data = data
-    catch newError
-      error = newError
-    @_sendErrorToSentry error, request, response
+  _getErrorWithCode: (error) =>
+    error = @_getError error
+    error.code = @_getCode error
+    return error
 
-  _sendErrorToSentry: (error, request, response) =>
-    debug 'maybe sending to sentry', error?.code
-    return if error?.code < 500
-    debug 'sending to sentry'
-    response._ravenSentError = true
-    @client.captureError error, @raven.parsers.parseRequest request
+  _getResponseMessage: (error, code) =>
+    return error if !_.isError(error) && _.isPlainObject(error)
+    message = @_getMessage error, code
+    return STATUS_CODES[code] unless message
+    return { error: message }
+
+  _getMessage: (error) =>
+    return error if _.isString error
+    return if error?.message == '[object Object]'
+    return unless error?.message
+    return error.message
+
+  _getCode: (error) =>
+    return error.code if STATUS_CODES[error?.code]?
+    return 500
+
+  _captureError: (error, request, response) =>
+    debug '_captureError'
+    return debug '_captureError already sent' if response.sentry?
+    return debug '_captureError non-500 level error' if error.code < 500
+    kwargs = @raven.parsers.parseRequest request
+    @client.captureError error, kwargs, (result) =>
+      response.sentry = @client.getIdent result
+
+  _captureMessage: (message, request, response) =>
+    debug '_captureMessage', message
+    return debug '_captureMessage already sent' if response.sentry?
+    kwargs = @raven.parsers.parseRequest request
+    @client.captureMessage message, kwargs, (result) =>
+      response.sentry = @client.getIdent result
 
 module.exports = Express

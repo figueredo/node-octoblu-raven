@@ -39,29 +39,18 @@ new OctobluRaven(overrideOptions)
 
 ### Express
 
+**!IMPORTANT:** As of v4.0.0 use the new expressBundle method since it makes everyones life easier.
+
+There is no longer a need for including express-send-error since that is included in the bundle.
+
 For use with express apps.
 
 ```coffee
+express      = require 'express'
 OctobluRaven = require 'octoblu-raven'
-ravenExpress = new OctobluRaven().express()
+app          = express()
 
-# Set the UUID of auth'd device as the user context for Sentry
-# NOTE: Place after meshbluAuth middleware
-app.use(ravenExpress.meshbluAuthContext())
-
-# Capture error requests with a status code of 500 or greater
-# This is fully compatible with the use of `express-send-error`
-# NOTE: User octobluRaven.patchGlobal() to capture uncaught exceptions
-# This will report the following cases:
-#   app.get '/blowup/500', (req, res, next) =>
-#     res.status(500).send error: 'oh no'
-#   app.get '/blowup/sendError', (req, res, next) =>
-#     error = new Error 'oh no'
-#     error.code = 502
-#     res.sendError error
-#   app.get '/blowup/uncaught', (req, res, next) =>
-#     throw new Error 'oh no'
-app.use(ravenExpress.handleErrors())
+new OctobluRaven().expressBundle({ app })
 ```
 
 ### Catch Uncaught Exceptions

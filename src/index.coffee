@@ -3,17 +3,27 @@ Express = require './express'
 debug   = require('debug')('octoblu-raven:index')
 
 class OctobluRaven
-  constructor: ({ @release, @dsn, @name } = {}, { @raven, @logFn } = {}) ->
+  constructor: ({ @release, @dsn, @name, @stayAlive } = {}, { @client, @raven, @logFn } = {}) ->
     @logFn ?= console.error
     @dsn ?= process.env.SENTRY_DSN
     @release ?= process.env.SENTRY_RELEASE
     @name ?= process.env.SENTRY_NAME
     @raven ?= require 'raven'
-    @client = @_getClient()
+    @client ?= @_getClient()
     debug 'constructed with', { @dsn, @release, @name }
+    @_express = new Express { @raven, @client, @logFn }
 
   express: =>
-    new Express { @raven, @client, @logFn }
+    return @_express
+
+  expressBundle: ({ app }) =>
+    throw new Error 'Missing required app' unless app?
+    return unless @client?
+    app.use @_express.sendErrorHandler()
+    app.use @_express.meshbluAuthContext()
+    app.use @_express.requestHandler()
+    app.use @_express.badRequestHandler()
+    app.use @_express.errorHandler()
 
   setUserContext: (options) =>
     @client.setUserContext options
@@ -24,13 +34,14 @@ class OctobluRaven
     return @client.captureMessage error, extra if _.isString error
     @client.captureMessage JSON.stringify(error), extra
 
-  patchGlobal: =>
+  patchGlobal: (callback=->) =>
     return unless @client?
     debug 'setting up patchGlobal'
     @client.patchGlobal (_, error) =>
-      debug 'received error', arguments...
-      console.error error?.stack ? error?.message ? error
-      process.exit 1
+      debug 'got error', error
+      @logFn error?.stack ? error?.message ? error
+      callback error
+      process.exit 1 if @stayAlive
 
   _getClient: =>
     return null unless @dsn?

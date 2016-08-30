@@ -1,54 +1,30 @@
-OctobluRaven = require '../'
+raven             = require 'raven'
+OctobluRaven      = require '../'
 
 describe 'OctobluRaven->patchGlobal', ->
   beforeEach ->
-    @client =
-      patchGlobal: sinon.spy()
-
-    @raven =
-      Client: sinon.stub().returns @client
+    @dsn = 'https://xxx:xxx@app.getsentry.com/87213'
+    @client = new raven.Client @dsn
+    @client.patchGlobal = sinon.spy()
 
   describe 'when the dsn exists', ->
-    describe 'when constructed with a release', ->
-      beforeEach ->
-        @sut = new OctobluRaven({ dsn: 'the-dsn', release: 'v1.0.0' }, { @raven })
-
-      describe '->patchGlobal', ->
-        beforeEach ->
-          @sut.patchGlobal()
-
-        it 'should create a client', ->
-          expect(@raven.Client).to.have.been.calledWith 'the-dsn', {
-            release: 'v1.0.0'
-          }
-
-        it 'should call the client.patchGlobal', ->
-          expect(@client.patchGlobal).to.have.been.called
-
-    describe 'when constructed without a release', ->
-      beforeEach ->
-        @sut = new OctobluRaven({ dsn: 'the-dsn' }, { @raven })
-
-      describe '->patchGlobal', ->
-        beforeEach ->
-          @sut.patchGlobal()
-
-        it 'should create a client', ->
-          expect(@raven.Client).to.have.been.calledWith 'the-dsn', {}
-
-        it 'should call the client.patchGlobal', ->
-          expect(@client.patchGlobal).to.have.been.called
-
-  describe 'when the dsn does not exist', ->
     beforeEach ->
-      @sut = new OctobluRaven({ }, { @raven })
+      @sut = new OctobluRaven({ @dsn, release: 'v1.0.0', stayAlive: true }, { @client })
 
-    describe '->patchGlobal', ->
+    describe 'when called', ->
       beforeEach ->
         @sut.patchGlobal()
 
-      it 'should not create a client', ->
-        expect(@raven.Client).to.have.not.been.called
-
       it 'should call the client.patchGlobal', ->
+        expect(@client.patchGlobal).to.have.been.called
+
+  describe 'when the dsn does not exist', ->
+    beforeEach ->
+      @sut = new OctobluRaven()
+
+    describe 'when called', ->
+      beforeEach ->
+        @sut.patchGlobal()
+
+      it 'should not call the client.patchGlobal', ->
         expect(@client.patchGlobal).to.have.not.been.called
