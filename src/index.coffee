@@ -3,7 +3,7 @@ Express = require './express'
 debug   = require('debug')('octoblu-raven:index')
 
 class OctobluRaven
-  constructor: ({ @release, @dsn, @name, @stayAlive } = {}, { @client, @raven, @logFn } = {}) ->
+  constructor: ({ @release, @dsn, @name } = {}, { @client, @raven, @logFn } = {}) ->
     @logFn ?= console.error
     @dsn ?= process.env.SENTRY_DSN
     @release ?= process.env.SENTRY_RELEASE
@@ -34,14 +34,13 @@ class OctobluRaven
     return @client.captureMessage error, extra if _.isString error
     @client.captureMessage JSON.stringify(error), extra
 
-  patchGlobal: (callback=->) =>
+  patchGlobal: =>
     return unless @client?
     debug 'setting up patchGlobal'
     @client.patchGlobal (_, error) =>
       debug 'got error', error
       @logFn error?.stack ? error?.message ? error
-      callback error
-      process.exit 1 if @stayAlive
+      process.exit 1
 
   _getClient: =>
     return null unless @dsn?

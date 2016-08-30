@@ -47,8 +47,8 @@ class Express
       catch stackerror
         @logFn stackerror.stack
       code = @_getCode error
-      @_captureError error, request, response if code >= 500
-      response.status(code).send @_getResponseMessage(error, code)
+      @_captureError error, code, request, response, =>
+        response.status(code).send @_getResponseMessage(error, code)
     next()
 
   _getError: (error) =>
@@ -77,13 +77,21 @@ class Express
     return error.code if STATUS_CODES[error?.code]?
     return 500
 
-  _captureError: (error, request, response) =>
+  _captureError: (error, code, request, response, callback) =>
+    if response.sentry?
+      debug '_captureError already sent'
+      callback null
+      return
+    if error.code < 500
+      debug '_captureError non-500 level error'
+      callback null
+      return
     debug '_captureError'
-    return debug '_captureError already sent' if response.sentry?
-    return debug '_captureError non-500 level error' if error.code < 500
     kwargs = @raven.parsers.parseRequest request
-    @client.captureError error, kwargs, (result) =>
-      response.sentry = @client.getIdent result
+    @raven.parsers.parseError error, kwargs, (kwargs) =>
+      @client.captureError error, kwargs, (result) =>
+        response.sentry = @client.getIdent result
+        callback null
 
   _captureMessage: (message, request, response) =>
     debug '_captureMessage', message
