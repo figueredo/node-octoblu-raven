@@ -78,6 +78,7 @@ class Express
     return 500
 
   _captureError: (error, code, request, response, callback) =>
+    return callback null unless @client?
     if response.sentry?
       debug '_captureError already sent'
       callback null
@@ -94,6 +95,7 @@ class Express
         callback null
 
   _captureMessage: (message, request, response) =>
+    return unless @client?
     debug '_captureMessage', message
     return debug '_captureMessage already sent' if response.sentry?
     kwargs = @raven.parsers.parseRequest request

@@ -18,12 +18,12 @@ class OctobluRaven
 
   expressBundle: ({ app }) =>
     throw new Error 'Missing required app' unless app?
-    return unless @client?
     app.use @_express.sendErrorHandler()
+    app.use @_express.errorHandler()
+    return unless @client?
     app.use @_express.meshbluAuthContext()
     app.use @_express.requestHandler()
     app.use @_express.badRequestHandler()
-    app.use @_express.errorHandler()
 
   setUserContext: (options) =>
     @client.setUserContext options
