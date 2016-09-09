@@ -25,6 +25,12 @@ class ExpressServer
     return "http://localhost:#{@server.address().port}"
 
   _routes: =>
+    @app.get '/throw/error', =>
+      throw new Error 'hello'
+
+    @app.get '/uncaught/error', =>
+      unknownfunc 'called with'
+
     @app.get '/blowup', (req, res) =>
       res.sendStatus 500
 
