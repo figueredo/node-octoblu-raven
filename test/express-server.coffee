@@ -14,7 +14,7 @@ class ExpressServer
 
   start: (callback) =>
     @_routes()
-    @server = @app.listen undefined, callback
+    @server = @app.listen null, callback
     enableDestroy @server
     return @server
 
@@ -39,6 +39,11 @@ class ExpressServer
 
     @app.get '/blowup/422', (req, res) =>
       res.sendStatus 422
+
+    @app.get '/blowup/sendUserError', (req, res) =>
+      error = new Error 'oh no user error'
+      error.code = 429
+      res.sendError error
 
     @app.get '/blowup/sendError', (req, res) =>
       error = new Error 'oh no error'
@@ -76,4 +81,3 @@ class ExpressServer
       res.status(200).send success: true
 
 module.exports = ExpressServer
-

@@ -36,20 +36,23 @@ class Express
     onFinished response, (error, response) =>
       code = response.statusCode
       return if code < 500
+      @_logError error
       @_captureMessage "#{STATUS_CODES[code]}: #{code}", request, response
     next()
 
   _sendErrorHandler: (request, response, next) =>
     debug '_sendErrorHandler'
     response.sendError = (error) =>
-      try
-        throw @_getError error
-      catch stackerror
-        @logFn stackerror.stack
+      @_logError error
       code = @_getCode error
       @_captureError error, code, request, response, =>
         response.status(code).send @_getResponseMessage(error, code)
     next()
+
+  _logError: (error) =>
+    message = _.get(error, 'stack', error)
+    return debug message if @_getCode(error) < 500
+    @logFn message
 
   _getError: (error) =>
     return new Error '[octoblu-raven] sendError called without an error' unless error?
@@ -74,7 +77,10 @@ class Express
     return error.message
 
   _getCode: (error) =>
-    return error.code if STATUS_CODES[error?.code]?
+    code = _.get error, 'code'
+    try
+      code = _.toNumber code
+    return error.code if STATUS_CODES[code]?
     return 500
 
   _captureError: (error, code, request, response, callback) =>

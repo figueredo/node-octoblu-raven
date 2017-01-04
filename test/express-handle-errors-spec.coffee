@@ -106,6 +106,34 @@ describe 'Express Errors', ->
     it 'should log the error with sentry', ->
       expect(@client.captureError).to.have.been.called
 
+    it 'should log the error', ->
+      expect(@logFn).to.have.been.called
+
+  describe 'GET /blowup/sendUserError', ->
+    beforeEach (done) ->
+      @server.start done
+
+    beforeEach (done) ->
+      options = {
+        baseUrl: @server.baseUrl()
+        uri: '/blowup/sendUserError'
+        json: true,
+      }
+      request.get options, (error, @response, @body) =>
+        done error
+
+    it 'should yield a 429', ->
+      expect(@response.statusCode).to.equal 429
+
+    it 'should yield the correct error response', ->
+      expect(@body).to.deep.equal error: 'oh no user error'
+
+    it 'should not log the error with sentry', ->
+      expect(@client.captureError).to.not.have.been.called
+
+    it 'should log not log the error', ->
+      expect(@logFn).to.not.have.been.called
+
   describe 'GET /blowup/sendError/no-code', ->
     beforeEach (done) ->
       @server.start done
@@ -145,7 +173,7 @@ describe 'Express Errors', ->
       expect(@response.statusCode).to.equal 500
 
     it 'should yield the correct error response', ->
-      expect(@body).to.equal STATUS_CODES[500]
+      expect(@body).to.deep.equal STATUS_CODES[500]
 
     it 'should log the error with sentry', ->
       expect(@client.captureError).to.have.been.called
