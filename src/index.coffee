@@ -1,12 +1,14 @@
 _       = require 'lodash'
+fs      = require 'fs'
+path    = require 'path'
 Express = require './express'
 debug   = require('debug')('octoblu-raven:index')
 
 class OctobluRaven
-  constructor: ({ @release, @dsn, @name } = {}, { @client, @raven, @logFn } = {}) ->
+  constructor: ({ release, @dsn, @name } = {}, { @client, @raven, @logFn } = {}) ->
     @logFn ?= console.error
     @dsn ?= process.env.SENTRY_DSN
-    @release ?= process.env.SENTRY_RELEASE
+    @release = @_getRelease release
     @name ?= process.env.SENTRY_NAME
     @raven ?= require 'raven'
     @client ?= @_getClient()
@@ -20,7 +22,6 @@ class OctobluRaven
     throw new Error 'Missing required app' unless app?
     app.use @_express.sendErrorHandler()
     app.use @_express.errorHandler()
-    return unless @client?
     app.use @_express.meshbluAuthContext()
     app.use @_express.requestHandler()
     app.use @_express.badRequestHandler()
@@ -41,6 +42,17 @@ class OctobluRaven
       debug 'got error', error
       @logFn error?.stack ? error?.message ? error
       process.exit 1
+
+  _getRelease: (release) =>
+    return release if release?
+    { SENTRY_RELEASE } = process.env
+    return SENTRY_RELEASE if SENTRY_RELEASE?
+    packagePath = path.join process.cwd(), 'package.json'
+    try
+      data = fs.readFileSync packagePath
+      { version } = JSON.parse data
+      return "v#{version}"
+    return
 
   _getClient: =>
     return null unless @dsn?

@@ -1,6 +1,6 @@
 {
   "name": "octoblu-raven",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "description": "Raven Error handling for Octoblu Services and workers.",
   "main": "index.js",
   "scripts": {
@@ -34,6 +34,7 @@
   "dependencies": {
     "coffee-script": "^1.11.1",
     "debug": "^2.2.0",
+    "errorhandler": "^1.5.0",
     "lodash": "^4.16.4",
     "on-finished": "^2.3.0",
     "raven": "~0.12.1"

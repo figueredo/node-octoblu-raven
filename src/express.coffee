@@ -1,5 +1,6 @@
 _                 = require 'lodash'
 onFinished        = require 'on-finished'
+errorhandler      = require 'errorhandler'
 { STATUS_CODES }  = require 'http'
 debug             = require('debug')('octoblu-raven:express')
 
@@ -8,18 +9,22 @@ class Express
 
   meshbluAuthContext: =>
     debug 'meshbluAuthContext'
+    return @_fakeIt() unless @client?
     return @_meshbluAuthContext
 
   errorHandler: =>
     debug 'errorHandler'
+    return errorhandler() unless @client?
     return @raven.middleware.express.errorHandler @client
 
   requestHandler: =>
     debug 'requestHandler'
+    return @_fakeIt() unless @client?
     return @raven.middleware.express.requestHandler @client
 
   badRequestHandler: =>
     debug 'badRequestHandler'
+    return @_fakeIt() unless @client?
     return @_badRequestHandler
 
   sendErrorHandler: =>
@@ -107,5 +112,9 @@ class Express
     kwargs = @raven.parsers.parseRequest request
     @client.captureMessage message, kwargs, (result) =>
       response.sentry = @client.getIdent result
+
+  _fakeIt: () =>
+    return (request, response, next) =>
+      next()
 
 module.exports = Express
