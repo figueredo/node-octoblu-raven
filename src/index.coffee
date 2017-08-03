@@ -8,8 +8,9 @@ class OctobluRaven
     @logFn ?= console.error
     @dsn ?= process.env.SENTRY_DSN
     debug 'constructed with', { @dsn }
+    return if Raven.installed
     Raven.disableConsoleAlerts()
-    Raven.config(@dsn)
+    Raven.config(@dsn).install() if @dsn?
 
   handleExpress: ({ app }) =>
     throw new Error 'OctobluRaven->express requires app' unless app?
@@ -26,8 +27,12 @@ class OctobluRaven
 
   patchGlobal: =>
     return unless @dsn?
+    Raven.uninstall()
     Raven.install (error) =>
       @logFn error?.stack ? error?.message ? error
       process.exit 1
+
+  off: =>
+    Raven.uninstall()
 
 module.exports = OctobluRaven

@@ -4,7 +4,7 @@ Raven             = require 'raven'
 { STATUS_CODES }  = require 'http'
 debug             = require('debug')('octoblu-raven:express')
 
-class Express
+class ExpressHandler
   constructor: ({ @dsn, @logFn } = {}) ->
 
   errorHandler: =>
@@ -24,15 +24,20 @@ class Express
   _sendErrorHandler: (request, response, next) =>
     debug '_sendErrorHandler'
     response.sendError = (error, code) =>
-      @_logError error
       code ?= @_getCode(error)
-      response.status(code).send @_getResponseMessage(error, code)
+      @_logError error, code
+      @_respondWithError response, error, code
     next()
 
-  _logError: (error) =>
+  _logError: (error, code) =>
     message = _.get(error, 'stack', error)
-    return debug message if @_getCode(error) < 500
+    return debug message if code < 500
     @logFn message
+
+  _respondWithError: (response, error, code) =>
+    response
+      .status(code)
+      .send @_getResponseMessage(error, code)
 
   _getError: (error) =>
     return new Error '[octoblu-raven] sendError called without an error' unless error?
@@ -67,4 +72,4 @@ class Express
     return (request, response, next) =>
       next()
 
-module.exports = Express
+module.exports = ExpressHandler
