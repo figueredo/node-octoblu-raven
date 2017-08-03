@@ -4,7 +4,7 @@ enableDestroy = require 'server-destroy'
 class ExpressServer
   constructor: ({ octobluRaven }) ->
     @app = express()
-    octobluRaven.expressBundle { @app }
+    octobluRaven.handleExpress { @app }
 
   use: (middleware) =>
     @app.use middleware
@@ -14,7 +14,7 @@ class ExpressServer
 
   start: (callback) =>
     @_routes()
-    @server = @app.listen null, callback
+    @server = @app.listen undefined, callback
     enableDestroy @server
     return @server
 

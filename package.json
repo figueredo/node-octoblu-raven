@@ -1,6 +1,6 @@
 {
   "name": "octoblu-raven",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Raven Error handling for Octoblu Services and workers.",
   "main": "index.js",
   "scripts": {
@@ -21,22 +21,21 @@
   },
   "homepage": "https://github.com/octoblu/node-octoblu-raven#readme",
   "devDependencies": {
-    "chai": "^3.5.0",
-    "coffee-coverage": "^1.0.1",
-    "express": "^4.14.0",
-    "mocha": "^3.1.2",
-    "node-mocks-http": "^1.5.4",
-    "request": "^2.75.0",
+    "chai": "^4.1.0",
+    "coffee-coverage": "^2.0.1",
+    "express": "^4.15.3",
+    "mocha": "^3.5.0",
+    "node-mocks-http": "^1.6.4",
+    "request": "^2.81.0",
     "server-destroy": "^1.0.1",
-    "sinon": "^1.17.6",
-    "sinon-chai": "^2.8.0"
+    "sinon": "^3.0.0",
+    "sinon-chai": "^2.12.0"
   },
   "dependencies": {
-    "coffee-script": "^1.11.1",
-    "debug": "^2.2.0",
+    "coffee-script": "^1.12.7",
+    "debug": "^2.6.8",
     "errorhandler": "^1.5.0",
     "lodash": "^4.16.4",
-    "on-finished": "^2.3.0",
-    "raven": "~0.12.1"
+    "raven": "^2.1.1"
   }
 }

@@ -1,13 +1,13 @@
-_                = require 'lodash'
+{describe,beforeEach,afterEach,it,expect} = global
+sinon            = require 'sinon'
 request          = require 'request'
-{ STATUS_CODES } = require 'http'
 ExpressServer    = require './express-server'
 OctobluRaven     = require '../'
 
 describe 'Express Development', ->
   beforeEach ->
     @logFn = sinon.spy()
-    @octobluRaven = new OctobluRaven({ }, { @logFn })
+    @octobluRaven = new OctobluRaven({ @logFn, dsn: null })
     @server = new ExpressServer { @octobluRaven }
 
   afterEach ->
@@ -44,4 +44,3 @@ describe 'Express Development', ->
 
     it 'should yield a 500', ->
       expect(@response.statusCode).to.equal 500
-
